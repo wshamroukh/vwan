@@ -1,1 +1,1 @@
-**Azure Virtual WAN scripts**
+**Azure Virtual WAN (vWAN) scripts**
