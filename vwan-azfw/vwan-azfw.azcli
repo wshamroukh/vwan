@@ -62,8 +62,8 @@ psk='secret123'
 vm_size=Standard_B2ats_v2
 vm_image=$(az vm image list -l $location1 -p Canonical -s 22_04-lts --all --query "[?offer=='0001-com-ubuntu-server-jammy'].urn" -o tsv | sort -u | tail -n 1) && echo $vm_image
 
-default_address1='0.0.0.0/1'
-default_address2='128.0.0.0/1'
+advertised_address1='1.1.1.1/32'
+advertised_address2='2.2.2.2/32'
 network_address_summary='10.0.0.0/8'
 
 cloudinit_file=~/cloudinit.txt
@@ -516,8 +516,7 @@ log syslog informational
 no ipv6 forwarding
 service integrated-vtysh-config
 !
-ip route $default_address1 $onprem1_gw_nic_default_gw
-ip route $default_address2 $onprem1_gw_nic_default_gw
+ip route $advertised_address1 $onprem1_gw_nic_default_gw
 ip route $onprem1_vnet_address $onprem1_gw_nic_default_gw
 ip route $vhub1_gw_bgp_ip0/32 $onprem1_gw_nic_default_gw
 ip route $vhub1_gw_bgp_ip1/32 $onprem1_gw_nic_default_gw
@@ -533,6 +532,7 @@ router bgp $onprem1_gw_asn
  neighbor $vhub1_gw_bgp_ip1 ebgp-multihop 2
  !
  address-family ipv4 unicast
+  network $advertised_address1
   network $onprem1_vnet_address
   neighbor $vhub1_gw_bgp_ip0 soft-reconfiguration inbound
   neighbor $vhub1_gw_bgp_ip1 soft-reconfiguration inbound
@@ -685,8 +685,7 @@ log syslog informational
 no ipv6 forwarding
 service integrated-vtysh-config
 !
-ip route $default_address1 $onprem2_gw_nic_default_gw
-ip route $default_address2 $onprem2_gw_nic_default_gw
+ip route $advertised_address2 $onprem2_gw_nic_default_gw
 ip route $onprem2_vnet_address $onprem2_gw_nic_default_gw
 ip route $vhub2_gw_bgp_ip0/32 $onprem2_gw_nic_default_gw
 ip route $vhub2_gw_bgp_ip1/32 $onprem2_gw_nic_default_gw
@@ -702,6 +701,7 @@ router bgp $onprem2_gw_asn
  neighbor $vhub2_gw_bgp_ip1 ebgp-multihop 2
  !
  address-family ipv4 unicast
+  network $advertised_address2 
   network $onprem2_vnet_address
   neighbor $vhub2_gw_bgp_ip0 soft-reconfiguration inbound
   neighbor $vhub2_gw_bgp_ip1 soft-reconfiguration inbound
@@ -787,8 +787,8 @@ hub2_fw_id=$(az network firewall show -g $rg -n $azfw2_name --query id -o tsv)
 
 # Configure static route to azure firewalls
 echo -e "\e[1;36mCreating route tables to route the traffic through both firewalls....\e[0m"
-az network vhub route-table route add --destination-type CIDR --destinations $default_address1 $default_address2 $vhub1_address $vhub2_address $spoke11_vnet_address $spoke12_vnet_address $spoke21_vnet_address $spoke22_vnet_address $onprem1_vnet_address $onprem2_vnet_address --next-hop-type ResourceId --vhub-name $vhub1_name --next-hop $hub1_fw_id --route-name default -g $rg -n defaultRouteTable --no-wait
-az network vhub route-table route add --destination-type CIDR --destinations $default_address1 $default_address2 $vhub1_address $vhub2_address $spoke11_vnet_address $spoke12_vnet_address $spoke21_vnet_address $spoke22_vnet_address $onprem1_vnet_address $onprem2_vnet_address --next-hop-type ResourceId --vhub-name $vhub2_name --next-hop $hub2_fw_id --route-name default -g $rg -n defaultRouteTable --no-wait
+az network vhub route-table route add --destination-type CIDR --destinations $advertised_address1 $advertised_address2 $vhub1_address $vhub2_address $spoke11_vnet_address $spoke12_vnet_address $spoke21_vnet_address $spoke22_vnet_address $onprem1_vnet_address $onprem2_vnet_address --next-hop-type ResourceId --vhub-name $vhub1_name --next-hop $hub1_fw_id --route-name default -g $rg -n defaultRouteTable --no-wait
+az network vhub route-table route add --destination-type CIDR --destinations $advertised_address1 $advertised_address2 $vhub1_address $vhub2_address $spoke11_vnet_address $spoke12_vnet_address $spoke21_vnet_address $spoke22_vnet_address $onprem1_vnet_address $onprem2_vnet_address --next-hop-type ResourceId --vhub-name $vhub2_name --next-hop $hub2_fw_id --route-name default -g $rg -n defaultRouteTable --no-wait
 
 # log analytics workspace
 az monitor log-analytics workspace create -n $rg -g $rg -o none
