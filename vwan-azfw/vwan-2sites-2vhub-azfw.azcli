@@ -1,6 +1,7 @@
 rg=vwan-2sites-2vhub-fw
 location1='centralindia'
 location2='eastus'
+vm_size=Standard_B2ats_v2
 
 vhub1_name=vhub1
 vhub1_address=10.1.0.0/23
